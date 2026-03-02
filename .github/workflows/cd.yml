@@ -1,0 +1,53 @@
+name: 'build and deploy production'
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-production-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set nodejs verstion to 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run build production (create dist folder)
+        run: npm run build
+
+      - name: Upload dist folder artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-production
+          path: dist
+
+  deploy-to-production:
+    needs: build-production-job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download dist folder artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-production
+          path: dist
+
+      - run: ls dist
+      # ให้ deploy เอง เช่น ssh
+
+      - uses: actions/checkout@v4
+
+      - name: publish vue to github pages
+        uses: SerhiiKa/VuePagesAction@1.0.4
+        with:
+          username: ${{ github.actor }} #codingthailand
+          reponame: ${{ github.event.repository.name }} #vue-github-app
+          token: ${{ secrets.GITHUB_TOKEN }}
